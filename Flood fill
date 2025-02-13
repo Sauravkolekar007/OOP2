@@ -1,0 +1,72 @@
+#include <GL/glut.h>
+
+// Window dimensions
+const int width = 500, height = 500;
+
+// Flood fill function
+void floodFill(int x, int y, float* fillColor, float* bgColor) {
+    float pixelColor[3];
+    glReadPixels(x, height - y, 1, 1, GL_RGB, GL_FLOAT, pixelColor);
+
+    // Check if pixel matches the background color
+    if (pixelColor[0] == bgColor[0] && pixelColor[1] == bgColor[1] && pixelColor[2] == bgColor[2]) {
+        glColor3fv(fillColor);
+        glBegin(GL_POINTS);
+        glVertex2i(x, y);
+        glEnd();
+        glFlush();
+
+        // Recursively call for adjacent pixels
+        floodFill(x + 1, y, fillColor, bgColor);
+        floodFill(x - 1, y, fillColor, bgColor);
+        floodFill(x, y + 1, fillColor, bgColor);
+        floodFill(x, y - 1, fillColor, bgColor);
+    }
+}
+
+// Mouse callback function
+void mouseClick(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        float fillColor[] = {1.0f, 0.0f, 0.0f};  // Red fill color
+        float bgColor[] = {1.0f, 1.0f, 1.0f};    // Background color (white)
+        floodFill(x, y, fillColor, bgColor);
+    }
+}
+
+// Draws a quadrilateral
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glColor3f(0.0, 0.0, 1.0);  // Blue quadrilateral
+    glBegin(GL_POLYGON);
+    glVertex2i(150, 150);
+    glVertex2i(350, 150);
+    glVertex2i(300, 300);
+    glVertex2i(100, 300);
+    glEnd();
+
+    glFlush();
+}
+
+// Initialize OpenGL
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);  // Set background color to white
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, width, 0, height);
+}
+
+// Main function
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(width, height);
+    glutCreateWindow("Flood Fill Algorithm");
+
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouseClick);
+    glutMainLoop();
+
+    return 0;
+}

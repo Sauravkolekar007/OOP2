@@ -1,76 +1,107 @@
 #include <GL/glut.h>
+#include <iostream>
 
-int width = 500, height = 500;  // Window size
-float fillColor[3] = {1.0, 0.0, 0.0}; // Red color
-float boundaryColor[3] = {0.0, 0.0, 0.0}; // Black boundary
+using namespace std;
 
-void setPixel(int x, int y, float color[3]) {
-    glBegin(GL_POINTS);
+// Define boundary colors and fill color
+float boundaryColor1[] = {1.0, 0.0, 0.0}; // Red
+float boundaryColor2[] = {0.0, 0.0, 1.0}; // Blue
+float fillColor[] = {0.0, 1.0, 0.0};      // Green
+
+// Function to compare two colors
+bool isSameColor(float color1[], float color2[]) {
+    return (color1[0] == color2[0] && color1[1] == color2[1] && color1[2] == color2[2]);
+}
+
+// Function to get the color of a pixel
+void getPixelColor(int x, int y, float color[]) {
+    glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, color);
+}
+
+// Function to set the color of a pixel
+void setPixelColor(int x, int y, float color[]) {
     glColor3fv(color);
+    glBegin(GL_POINTS);
     glVertex2i(x, y);
     glEnd();
     glFlush();
 }
 
-void getPixelColor(int x, int y, float color[3]) {
-    glReadPixels(x, height - y, 1, 1, GL_RGB, GL_FLOAT, color);
-}
+// Boundary Fill Algorithm
+void boundaryFill(int x, int y, float fill[], float boundary1[], float boundary2[]) {
+    float pixelColor[3];
+    getPixelColor(x, y, pixelColor);
 
-void boundaryFill(int x, int y) {
-    float currentColor[3];
-    getPixelColor(x, y, currentColor);
+    // Check if pixel is already filled or part of a boundary
+    if (isSameColor(pixelColor, boundary1) || isSameColor(pixelColor, boundary2) || isSameColor(pixelColor, fill))
+        return;
 
-    // Check if the pixel is neither boundary nor fill color
-    if ((currentColor[0] != boundaryColor[0] || currentColor[1] != boundaryColor[1] || currentColor[2] != boundaryColor[2]) &&
-        (currentColor[0] != fillColor[0] || currentColor[1] != fillColor[1] || currentColor[2] != fillColor[2])) {
-        
-        setPixel(x, y, fillColor);
-
-        // Recursively fill in 4 directions
-        boundaryFill(x + 1, y);
-        boundaryFill(x - 1, y);
-        boundaryFill(x, y + 1);
-        boundaryFill(x, y - 1);
+    // If the fill color matches a boundary, fill with boundary color instead
+    if (isSameColor(fill, boundary1) || isSameColor(fill, boundary2)) {
+        setPixelColor(x, y, boundary1);  // Set boundary color
+    } else {
+        setPixelColor(x, y, fill);  // Set fill color
     }
+
+    // Recursive calls in 4 directions
+    boundaryFill(x + 1, y, fill, boundary1, boundary2);
+    boundaryFill(x - 1, y, fill, boundary1, boundary2);
+    boundaryFill(x, y + 1, fill, boundary1, boundary2);
+    boundaryFill(x, y - 1, fill, boundary1, boundary2);
 }
 
+// Draw a sample polygon with two boundary colors
 void drawPolygon() {
-    glColor3fv(boundaryColor);
+    glColor3fv(boundaryColor1);
     glBegin(GL_LINE_LOOP);
     glVertex2i(100, 100);
-    glVertex2i(300, 100);
-    glVertex2i(300, 300);
-    glVertex2i(100, 300);
+    glVertex2i(200, 100);
+    glVertex2i(200, 200);
+    glVertex2i(100, 200);
     glEnd();
+
+    glColor3fv(boundaryColor2);
+    glBegin(GL_LINES);
+    glVertex2i(100, 100);
+    glVertex2i(200, 200);
+    glEnd();
+
     glFlush();
 }
 
-void display() {
-    glClear(GL_COLOR_BUFFER_BIT);
-    drawPolygon();
-}
-
+// Mouse click callback
 void mouse(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        boundaryFill(x, y);
+        int windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+        boundaryFill(x, windowHeight - y, fillColor, boundaryColor1, boundaryColor2);
     }
 }
 
+// OpenGL initialization
 void init() {
     glClearColor(1.0, 1.0, 1.0, 1.0); // White background
     glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, width, 0, height);
+    gluOrtho2D(0, 500, 0, 500);
 }
 
-int main(int argc, char **argv) {
+// Display function
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawPolygon();
+    glFlush();
+}
+
+// Main function
+int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-    glutInitWindowSize(width, height);
-    glutCreateWindow("Boundary Fill Algorithm");
+    glutInitWindowSize(500, 500);
+    glutCreateWindow("Boundary Fill Algorithm with Two Boundary Colors");
+
     init();
     glutDisplayFunc(display);
     glutMouseFunc(mouse);
+
     glutMainLoop();
     return 0;
 }

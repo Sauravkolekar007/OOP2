@@ -1,0 +1,76 @@
+#include <GL/glut.h>
+
+int width = 500, height = 500;  // Window size
+float fillColor[3] = {1.0, 0.0, 0.0}; // Red color
+float boundaryColor[3] = {0.0, 0.0, 0.0}; // Black boundary
+
+void setPixel(int x, int y, float color[3]) {
+    glBegin(GL_POINTS);
+    glColor3fv(color);
+    glVertex2i(x, y);
+    glEnd();
+    glFlush();
+}
+
+void getPixelColor(int x, int y, float color[3]) {
+    glReadPixels(x, height - y, 1, 1, GL_RGB, GL_FLOAT, color);
+}
+
+void boundaryFill(int x, int y) {
+    float currentColor[3];
+    getPixelColor(x, y, currentColor);
+
+    // Check if the pixel is neither boundary nor fill color
+    if ((currentColor[0] != boundaryColor[0] || currentColor[1] != boundaryColor[1] || currentColor[2] != boundaryColor[2]) &&
+        (currentColor[0] != fillColor[0] || currentColor[1] != fillColor[1] || currentColor[2] != fillColor[2])) {
+        
+        setPixel(x, y, fillColor);
+
+        // Recursively fill in 4 directions
+        boundaryFill(x + 1, y);
+        boundaryFill(x - 1, y);
+        boundaryFill(x, y + 1);
+        boundaryFill(x, y - 1);
+    }
+}
+
+void drawPolygon() {
+    glColor3fv(boundaryColor);
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(100, 100);
+    glVertex2i(300, 100);
+    glVertex2i(300, 300);
+    glVertex2i(100, 300);
+    glEnd();
+    glFlush();
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawPolygon();
+}
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        boundaryFill(x, y);
+    }
+}
+
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 1.0); // White background
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, width, 0, height);
+}
+
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(width, height);
+    glutCreateWindow("Boundary Fill Algorithm");
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutMainLoop();
+    return 0;
+}
